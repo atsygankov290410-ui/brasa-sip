@@ -5,7 +5,9 @@
 Student Innovation Project (SIP) 2026-2027
 **Tsygankov, Andrei** · Living Stone International School · Grade 10-J student
 
-The app runs locally, keeps its state in the URL, and needs no account and no server setup beyond a static file server.
+Live site: https://atsygankov290410-ui.github.io/brasa-sip/
+
+The app also runs locally, keeps its state in the URL, and needs no account and no server setup beyond a static file server.
 
 ## What it does
 
