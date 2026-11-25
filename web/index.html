@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="BRASA harmonizes NASA FIRMS MODIS and VIIRS active-fire hotspots into one consistent burning-activity calendar (2000-present) for any area of interest. Student Innovation Project 2026-2027 by Tsygankov, Andrei, Living Stone International School." />
+    <meta name="author" content="Tsygankov, Andrei" />
+    <title>BRASA - Harmonized Fire Calendar · SIP 2026-2027</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <a class="skip" href="#calendar-card">Skip to calendar</a>
+    <header class="topbar">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2c2 6 9 9 9 17a9 9 0 0 1-18 0c0-4 2-7 4-9 0 3 1 5 3 6-1-6 0-10 2-14z" fill="url(#lg)"/><defs><linearGradient id="lg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff3d00"/><stop offset="1" stop-color="#ffc400"/></linearGradient></defs></svg>
+        <div>
+          <h1>BRASA</h1>
+          <p class="tagline" data-i18n="subtitle">Harmonized MODIS + VIIRS burning activity calendar</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <label class="sr-only" for="region" data-i18n="region">Region</label>
+        <select id="region" aria-label="Region"></select>
+        <button class="btn ghost" id="license-btn" type="button" title="MIT License"><span data-i18n="license">MIT License</span></button>
+        <button class="btn ghost" id="lang" type="button">Filipino</button>
+        <button class="btn ghost icon" id="theme" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">◐</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="panel" aria-label="Controls">
+        <section>
+          <h2 data-i18n="aoi">Area of interest</h2>
+          <div class="seg" role="group" aria-label="Area of interest tools">
+            <button type="button" class="btn" data-aoi="region" data-i18n="aoiRegion">Whole region</button>
+            <button type="button" class="btn" data-aoi="polygon" data-i18n="aoiDraw">Draw polygon</button>
+            <button type="button" class="btn" data-aoi="rect" data-i18n="aoiRect">Draw rectangle</button>
+            <button type="button" class="btn" data-aoi="point" data-i18n="aoiPoint">Point + radius</button>
+          </div>
+          <p class="hint" id="aoi-hint" hidden></p>
+          <form id="latlon" class="grid3">
+            <label><span data-i18n="lat">Latitude</span><input id="lat" type="number" step="any" min="-90" max="90" required /></label>
+            <label><span data-i18n="lon">Longitude</span><input id="lon" type="number" step="any" min="-180" max="180" required /></label>
+            <label><span data-i18n="radius">Radius (km)</span><input id="rad" type="number" step="1" min="1" max="1000" value="50" required /></label>
+            <button class="btn primary" type="submit" data-i18n="apply">Apply</button>
+          </form>
+          <label class="file"><span data-i18n="aoiFile">Upload GeoJSON</span><input id="geojson" type="file" accept=".geojson,.json,application/geo+json" /></label>
+          <p class="aoi-info" id="aoi-info" aria-live="polite"></p>
+        </section>
+
+        <section>
+          <h2 data-i18n="period">Period</h2>
+          <div class="grid2">
+            <label><span data-i18n="from">From</span><input id="from" type="month" /></label>
+            <label><span data-i18n="to">To</span><input id="to" type="month" /></label>
+          </div>
+          <h3 data-i18n="baseline">Baseline years</h3>
+          <div class="grid2">
+            <label><span class="sr-only">Baseline start</span><input id="b0" type="number" min="2001" max="2026" /></label>
+            <label><span class="sr-only">Baseline end</span><input id="b1" type="number" min="2001" max="2026" /></label>
+          </div>
+        </section>
+
+        <section>
+          <h2 data-i18n="view">Calendar shows</h2>
+          <div class="seg" role="radiogroup" aria-label="Calendar view">
+            <button type="button" class="btn" role="radio" data-view="counts" data-i18n="viewCounts">Hotspot counts</button>
+            <button type="button" class="btn" role="radio" data-view="anomaly" data-i18n="viewAnomaly">Anomaly vs median</button>
+          </div>
+          <h3 data-i18n="units">Units</h3>
+          <div class="seg" role="radiogroup" aria-label="Units">
+            <button type="button" class="btn" role="radio" data-units="modis" data-i18n="unitsModis">MODIS-equivalent</button>
+            <button type="button" class="btn" role="radio" data-units="viirs" data-i18n="unitsViirs">VIIRS-equivalent</button>
+          </div>
+          <label><span data-i18n="ramp">Colour ramp</span><select id="ramp"></select></label>
+          <label><span data-i18n="basemap">Basemap</span>
+            <select id="basemap">
+              <option value="auto" data-i18n="basemapLight">Light</option>
+              <option value="dark" data-i18n="basemapDark">Dark</option>
+              <option value="gibs" data-i18n="basemapGibs">NASA GIBS VIIRS true colour</option>
+            </select>
+          </label>
+        </section>
+
+        <section>
+          <h2 data-i18n="live">Live NRT (last days)</h2>
+          <p class="hint" data-i18n="liveDesc">Fetches the latest near-real-time detections from NASA FIRMS for the AOI.</p>
+          <label><span data-i18n="liveKey">FIRMS MAP_KEY</span><input id="mapkey" type="password" autocomplete="off" spellcheck="false" /></label>
+          <p class="hint small" data-i18n="liveKeyHint">Free key from firms.modaps.eosdis.nasa.gov/api/map_key. Stored only in this browser.</p>
+          <button class="btn" id="live-btn" type="button" data-i18n="liveFetch">Fetch last 3 days</button>
+          <p id="live-out" class="aoi-info" aria-live="polite"></p>
+        </section>
+
+        <section>
+          <h2 data-i18n="downloads">Downloads</h2>
+          <div class="stack">
+            <button class="btn" type="button" id="dl-hotspots" data-i18n="dlCsvHotspots">Hotspots CSV</button>
+            <button class="btn" type="button" id="dl-monthly" data-i18n="dlCsvMonthly">Monthly analytics CSV</button>
+            <button class="btn" type="button" id="dl-png" data-i18n="dlPng">Calendar image (PNG)</button>
+            <button class="btn" type="button" id="dl-svg" data-i18n="dlSvg">Calendar image (SVG)</button>
+            <button class="btn" type="button" id="dl-json" data-i18n="dlJson">Report (JSON)</button>
+            <button class="btn primary" type="button" id="share" data-i18n="share">Copy shareable link</button>
+          </div>
+          <p id="dl-status" class="aoi-info" aria-live="polite"></p>
+        </section>
+      </aside>
+
+      <main id="main">
+        <section class="intro" aria-labelledby="intro-title">
+          <div class="intro-text">
+            <h2 id="intro-title" data-i18n="introTitle">One fire record from 2000 to today, whatever satellite saw it.</h2>
+            <p data-i18n="introText">NASA FIRMS hotspots from MODIS (since 2000) and VIIRS (since 2012) are harmonized into one consistent monthly series. Pick an area to read its burning calendar, anomalies and trends.</p>
+            <p class="project-line" data-i18n="projectInfo">Student Innovation Project (SIP) 2026-2027 · Tsygankov, Andrei · Living Stone International School · Grade 10-J student</p>
+          </div>
+          <ul class="badges" id="badges" aria-label="Data and validation"></ul>
+        </section>
+
+        <section class="map-wrap is-loading" id="map-wrap">
+          <div id="map" role="application" aria-label="Map of the area of interest"></div>
+          <div class="map-skeleton" aria-hidden="true"><span class="spinner"></span><span data-i18n="loadingMap">Loading basemap…</span></div>
+          <div class="map-legend" id="map-legend" aria-live="polite"></div>
+        </section>
+
+        <section class="kpis" id="kpis" aria-label="Key indicators"></section>
+
+        <section class="card" id="calendar-card">
+          <div class="card-head">
+            <div>
+              <h2 data-i18n="calendar">Burning activity calendar</h2>
+              <p class="hint" data-i18n="calendarDesc">Harmonized hotspot detections per month.</p>
+            </div>
+            <button class="btn ghost" id="table-btn" type="button" data-i18n="table">Show as table</button>
+          </div>
+          <div id="calendar" class="chart"></div>
+          <div id="cal-table" class="table-wrap" hidden></div>
+          <p class="hint small" data-i18n="selectMonthHint">Select a calendar cell to show that month's hotspots on the map.</p>
+        </section>
+
+        <div class="two">
+          <section class="card">
+            <h2><span data-i18n="seasonal">Seasonal profile</span> <span id="season-year" class="muted"></span></h2>
+            <p class="hint" data-i18n="seasonalDesc">Baseline median and IQR per month.</p>
+            <div id="seasonal" class="chart"></div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2 data-i18n="annual">Annual totals</h2>
+                <p class="hint" data-i18n="annualDesc">Harmonized series vs raw sensor counts.</p>
+              </div>
+              <label class="check"><input type="checkbox" id="raw-toggle" checked /> raw</label>
+            </div>
+            <div id="annual" class="chart"></div>
+          </section>
+        </div>
+
+        <section class="card">
+          <h2 data-i18n="summary">Situation summary</h2>
+          <ul id="summary" class="summary"></ul>
+        </section>
+      </main>
+    </div>
+
+    <footer class="footer">
+      <p class="built"><span data-i18n="builtFor">SIP 2026-2027 · Tsygankov, Andrei · Living Stone International School · Grade 10-J</span> · <button class="linklike" id="license-link" type="button">MIT License</button></p>
+      <p data-i18n="footer">Data: NASA FIRMS (MODIS C6.1, VIIRS S-NPP 375 m). Not an official NASA product.</p>
+      <p class="small"><span data-i18n="licenseNote">MIT licensed · Fire data from the NASA FIRMS API</span>. We acknowledge the use of data from NASA's Fire Information for Resource Management System (FIRMS), part of NASA's Earth Science Data and Information System (ESDIS). Basemaps: OpenFreeMap / © OpenStreetMap contributors, NASA GIBS.</p>
+    </footer>
+
+    <dialog id="license-dialog" class="license-dialog" aria-labelledby="license-title">
+      <div class="license-head">
+        <h2 id="license-title">MIT License</h2>
+        <button class="btn ghost icon" id="license-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <p class="license-meta">BRASA · Copyright (c) 2026 Tsygankov, Andrei</p>
+      <pre class="license-body">Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+      <p class="license-foot">Third-party data and imagery (NASA FIRMS, NASA GIBS, OpenStreetMap contributors, Natural Earth) keeps its own terms.</p>
+    </dialog>
+
+    <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+    <div id="loading" class="loading" role="status"><span class="spinner"></span><span data-i18n="loading">Loading data…</span></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

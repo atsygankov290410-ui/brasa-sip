@@ -1,0 +1,16 @@
+[
+ {
+  "id": "philippines",
+  "name": "Philippines",
+  "label": {
+   "en": "Philippines",
+   "fil": "Pilipinas"
+  },
+  "bbox": [
+   116.9,
+   4.5,
+   126.7,
+   21.2
+  ]
+ }
+]
